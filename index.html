@@ -1,28 +1,108 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Grow a Garden - Trade & Chat</title>
+  <title>Grow a Garden Trade Chat</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBRDxGLy4EjiOOrPnVv1KhPZlfcdHv1Gqw",
+      authDomain: "growagardentrade-984b8.firebaseapp.com",
+      databaseURL: "https://growagardentrade-984b8-default-rtdb.firebaseio.com",
+      projectId: "growagardentrade-984b8",
+      storageBucket: "growagardentrade-984b8.appspot.com",
+      messagingSenderId: "483682582157",
+      appId: "1:483682582157:web:e32ffb641bf5dd3d08acc4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const messagesRef = ref(db, "messages");
+
+    async function getUserIdFromUsername(username) {
+      const res = await fetch("https://users.roblox.com/v1/usernames/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usernames: [username], excludeBannedUsers: true })
+      });
+      const data = await res.json();
+      return data.data?.[0]?.id || null;
+    }
+
+    async function getAvatarURL(username) {
+      const userId = await getUserIdFromUsername(username);
+      return userId
+        ? `https://www.roblox.com/headshot-thumbnail/image?userId=${userId}&width=150&height=150&format=png`
+        : "https://tr.rbxcdn.com/3f1cd497b601a476164c10d57450f356/150/150/AvatarHeadshot/Png";
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const chatDiv = document.getElementById("chat");
+      const usernameInput = document.getElementById("username");
+      const messageInput = document.getElementById("message");
+      const sendBtn = document.getElementById("send");
+
+      let replyTo = null;
+
+      sendBtn.onclick = async () => {
+        const username = usernameInput.value.trim();
+        const message = messageInput.value.trim();
+        if (!username || !message) return;
+
+        await push(messagesRef, {
+          username,
+          message,
+          replyTo: replyTo || null,
+          timestamp: Date.now()
+        });
+
+        messageInput.value = "";
+        replyTo = null;
+        document.getElementById("replyingTo").textContent = "";
+      };
+
+      onChildAdded(messagesRef, async (data) => {
+        const msg = data.val();
+        const avatarURL = await getAvatarURL(msg.username);
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "message";
+
+        const repliedText = msg.replyTo ? `<div class="reply-to">Replying to: <b>${msg.replyTo}</b></div>` : "";
+
+        messageDiv.innerHTML = `
+          <img src="${avatarURL}" alt="avatar" class="avatar">
+          <div class="msg-content">
+            <b>${msg.username}</b>${repliedText}
+            <p>${msg.message}</p>
+            <button onclick="replyToUser('${msg.username}')">Reply</button>
+          </div>
+        `;
+
+        chatDiv.appendChild(messageDiv);
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+      });
+
+      window.replyToUser = (username) => {
+        replyTo = username;
+        document.getElementById("replyingTo").textContent = `Replying to: ${username}`;
+      };
+    });
+  </script>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f0f4f8;
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
       padding: 20px;
     }
-    #chatBox {
-      width: 100%;
-      max-width: 600px;
-      margin: auto;
-      background: white;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: 0 0 10px #ccc;
-    }
-    #messages {
-      max-height: 400px;
-      overflow-y: auto;
-      margin-bottom: 20px;
+    #chat {
+      height: 400px;
+      overflow-y: scroll;
+      border: 1px solid #ccc;
+      padding: 10px;
+      background: #fff;
+      margin-bottom: 15px;
     }
     .message {
       display: flex;
@@ -34,162 +114,44 @@
     .avatar {
       width: 50px;
       height: 50px;
-      border-radius: 50%;
+      border-radius: 8px;
       margin-right: 10px;
     }
-    .bubble {
-      background: #e0ecff;
-      border-radius: 10px;
-      padding: 10px;
-      max-width: 400px;
+    .msg-content {
+      flex-grow: 1;
     }
-    .username {
+    .msg-content p {
+      margin: 5px 0;
+    }
+    .reply-to {
+      font-size: 0.85em;
+      color: #888;
+    }
+    #replyingTo {
       font-weight: bold;
-      margin-bottom: 5px;
-    }
-    #inputForm {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      margin-bottom: 10px;
+      color: #007bff;
     }
     input, button {
       padding: 10px;
-      font-size: 1rem;
-      border-radius: 5px;
-      border: 1px solid #ccc;
+      margin-right: 5px;
     }
-    .reply-btn {
-      font-size: 0.8rem;
-      margin-top: 5px;
-      background: #d0d0ff;
+    button {
+      background: #007bff;
+      color: white;
       border: none;
       cursor: pointer;
     }
   </style>
 </head>
 <body>
+  <h2>Grow a Garden Global Chat</h2>
+  <div id="chat"></div>
 
-<div id="chatBox">
-  <h2>🌱 Grow a Garden – Trade Chat</h2>
-  <div id="messages"></div>
+  <div id="replyingTo"></div>
 
-  <form id="inputForm">
-    <input type="text" id="username" placeholder="Enter your Roblox username" required>
-    <input type="text" id="messageInput" placeholder="Enter your message..." required>
-    <input type="hidden" id="replyTo">
-    <button type="submit">Send Message</button>
-  </form>
-</div>
-
-<!-- Firebase -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBRDxGLy4EjiOOrPnVv1KhPZlfcdHv1Gqw",
-    authDomain: "growagardentrade-984b8.firebaseapp.com",
-    databaseURL: "https://growagardentrade-984b8-default-rtdb.firebaseio.com",
-    projectId: "growagardentrade-984b8",
-    storageBucket: "growagardentrade-984b8.appspot.com",
-    messagingSenderId: "483682582157",
-    appId: "1:483682582157:web:e32ffb641bf5dd3d08acc4"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const messagesRef = ref(db, 'messages');
-
-  const messagesDiv = document.getElementById('messages');
-  const inputForm = document.getElementById('inputForm');
-  const usernameInput = document.getElementById('username');
-  const messageInput = document.getElementById('messageInput');
-  const replyToInput = document.getElementById('replyTo');
-
-  async function getUserIdFromUsername(username) {
-    const res = await fetch(`https://users.roblox.com/v1/usernames/users`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ usernames: [username], excludeBannedUsers: true })
-    });
-    const data = await res.json();
-    return data.data?.[0]?.id || null;
-  }
-
-  async function getAvatarURL(username) {
-    const userId = await getUserIdFromUsername(username);
-    if (userId) {
-      return `https://www.roblox.com/headshot-thumbnail/image?userId=${userId}&width=150&height=150&format=png`;
-    } else {
-      return "https://tr.rbxcdn.com/3f1cd497b601a476164c10d57450f356/150/150/AvatarHeadshot/Png";
-    }
-  }
-
-  inputForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = usernameInput.value.trim();
-    const text = messageInput.value.trim();
-    const replyTo = replyToInput.value.trim();
-
-    if (username && text) {
-      push(messagesRef, {
-        username,
-        text,
-        replyTo: replyTo || null,
-        timestamp: Date.now()
-      });
-      messageInput.value = '';
-      replyToInput.value = '';
-    }
-  });
-
-  onChildAdded(messagesRef, async (data) => {
-    const msg = data.val();
-    const avatarURL = await getAvatarURL(msg.username);
-
-    const msgDiv = document.createElement('div');
-    msgDiv.className = 'message';
-
-    const avatar = document.createElement('img');
-    avatar.src = avatarURL;
-    avatar.className = 'avatar';
-
-    const content = document.createElement('div');
-    content.className = 'bubble';
-
-    const name = document.createElement('div');
-    name.className = 'username';
-    name.textContent = msg.username;
-
-    const text = document.createElement('div');
-    text.textContent = msg.text;
-
-    const replyBtn = document.createElement('button');
-    replyBtn.className = 'reply-btn';
-    replyBtn.textContent = '↩️ Reply';
-    replyBtn.onclick = () => {
-      replyToInput.value = msg.username;
-      messageInput.focus();
-      messageInput.placeholder = `Replying to ${msg.username}...`;
-    };
-
-    content.appendChild(name);
-    if (msg.replyTo) {
-      const replyTo = document.createElement('div');
-      replyTo.style.fontSize = "0.85rem";
-      replyTo.style.color = "gray";
-      replyTo.textContent = `Replying to @${msg.replyTo}`;
-      content.appendChild(replyTo);
-    }
-    content.appendChild(text);
-    content.appendChild(replyBtn);
-
-    msgDiv.appendChild(avatar);
-    msgDiv.appendChild(content);
-    messagesDiv.appendChild(msgDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  });
-</script>
-
+  <input type="text" id="username" placeholder="Your Roblox Username">
+  <input type="text" id="message" placeholder="Enter your message">
+  <button id="send">Send</button>
 </body>
 </html>

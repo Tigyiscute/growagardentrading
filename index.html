@@ -1,252 +1,170 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>GardenTrade - Roblox Garden Trading</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grow a Garden Trade</title>
   <style>
     body {
       margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: #a4e4a4;
+      font-family: Arial, sans-serif;
+      background: url('https://imgur.com/9fWnWP9.jpg') no-repeat center center fixed;
+      background-size: cover;
     }
-
-    .auth-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 100px;
+    .overlay {
+      background: rgba(255,255,255,0.9);
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
     }
-
-    .auth-box {
-      background: white;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    .container {
+      position: relative;
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+      margin-top: 60px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 10px;
+    }
+    h1 {
       text-align: center;
     }
-
-    .auth-box input {
+    .login {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .login input, .login button {
       padding: 10px;
-      margin: 10px;
-      width: 200px;
+      margin: 5px;
+      border-radius: 5px;
     }
-
-    .auth-box button {
-      padding: 10px 20px;
-      margin-top: 10px;
-    }
-
-    .toggle-auth {
-      color: blue;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
-    .trade-ui {
-      display: none;
-      background: url('https://i.imgur.com/9fWnWP9.jpeg') no-repeat center center;
-      background-size: cover;
-      height: 100vh;
-      position: relative;
-    }
-
-    .ready-button {
-      position: absolute;
-      width: 120px;
-      height: 40px;
-      background: yellow;
-      border-radius: 8px;
-      border: none;
+    .online {
+      margin: 10px 0;
+      text-align: center;
       font-weight: bold;
-      cursor: pointer;
     }
-
-    #left-button {
-      bottom: 100px;
-      left: 100px;
+    .trade-boxes {
+      display: flex;
+      justify-content: space-between;
+      background-color: transparent;
     }
-
-    #right-button {
-      bottom: 100px;
-      right: 100px;
-    }
-
-    .trade-label {
-      position: absolute;
-      top: 30px;
-      left: 60px;
-      font-size: 28px;
-      font-weight: bold;
-      color: white;
-      text-shadow: 2px 2px 5px black;
-    }
-
-    .online-users {
-      position: absolute;
-      top: 30px;
-      right: 30px;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 15px;
+    .box {
+      background-color: #6b3e1d;
+      width: 45%;
+      padding: 10px;
+      border: 2px solid #3a1e0f;
       border-radius: 10px;
-      max-height: 200px;
-      overflow-y: auto;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
-    }
-
-    .online-users h3 {
-      margin-top: 0;
-      font-size: 16px;
-    }
-
-    .online-users ul {
-      list-style: none;
-      padding-left: 0;
-      margin: 0;
-    }
-
-    .online-users li {
-      font-size: 14px;
-      margin: 4px 0;
-    }
-
-    #your-offer-label, #friend-offer-label {
       color: white;
+    }
+    .box h3 {
+      text-align: center;
+    }
+    .add-button {
+      background-color: gold;
+      border: none;
+      padding: 10px;
+      width: 100%;
+      margin-top: 10px;
       font-weight: bold;
-      font-size: 20px;
-      text-shadow: 1px 1px 3px black;
+      border-radius: 8px;
     }
-
-    #your-offer-label {
-      position: absolute;
-      top: 100px;
-      left: 100px;
+    .pet-select {
+      text-align: center;
+      margin-top: 20px;
     }
-
-    #friend-offer-label {
-      position: absolute;
-      top: 100px;
-      right: 100px;
-      text-align: right;
+    select, .confirm-btn {
+      padding: 10px;
+      border-radius: 5px;
+      margin: 5px;
     }
   </style>
 </head>
 <body>
+  <div class="overlay"></div>
+  <div class="container">
+    <h1>Grow a Garden Trade</h1>
 
-<!-- Login/Register Screen -->
-<div class="auth-container" id="auth-container">
-  <div class="auth-box">
-    <h2 id="auth-title">Sign In</h2>
-    <input type="text" id="username" placeholder="Username"><br>
-    <input type="password" id="password" placeholder="Password"><br>
-    <button onclick="login()">Continue</button>
-    <div class="toggle-auth" onclick="toggleAuth()">Don't have an account?</div>
+    <div class="login" id="loginForm">
+      <input type="text" id="username" placeholder="Username" />
+      <input type="password" id="password" placeholder="Password" />
+      <button onclick="login()">Login</button>
+    </div>
+
+    <div id="app" style="display:none">
+      <div class="online">Users Online: <span id="usersOnline">2</span></div>
+
+      <div class="trade-boxes">
+        <div class="box">
+          <h3>Your Offer</h3>
+          <ul id="yourItems"></ul>
+          <button class="add-button" onclick="addItem('you')">Add Sheckles</button>
+        </div>
+
+        <div class="box">
+          <h3>@Friend's Offer</h3>
+          <ul id="friendItems"></ul>
+          <button class="add-button" onclick="addItem('friend')">Add Sheckles</button>
+        </div>
+      </div>
+
+      <div class="pet-select">
+        <label for="pet">Select Pet:</label>
+        <select id="pet">
+          <option value="Corrupted Kitsune">Corrupted Kitsune</option>
+          <option value="Shadow Golem">Shadow Golem</option>
+          <option value="Golden Sprout">Golden Sprout</option>
+          <option value="Mystic Shroom">Mystic Shroom</option>
+          <option value="Blossom Drake">Blossom Drake</option>
+        </select>
+        <button class="confirm-btn" onclick="confirmItem()">Add to Trade</button>
+      </div>
+    </div>
   </div>
-</div>
 
-<!-- Trade UI -->
-<div class="trade-ui" id="trade-ui">
-  <div class="trade-label">Trade</div>
+  <script>
+    let usersOnline = 2;
+    let loggedInUser = null;
 
-  <!-- Offer Labels -->
-  <div id="your-offer-label">Your Offer</div>
-  <div id="friend-offer-label">@Waiting for other user...</div>
+    const validAccounts = {
+      user1: 'test1',
+      user2: 'test2'
+    };
 
-  <!-- Online Users Sidebar -->
-  <div class="online-users" id="online-users">
-    <h3>Online Users</h3>
-    <ul id="user-list"></ul>
-  </div>
-
-  <!-- Ready Buttons -->
-  <button class="ready-button" id="left-button" onclick="alert('You are ready!')">Ready</button>
-  <button class="ready-button" id="right-button" onclick="alert('You are ready!')">Ready</button>
-</div>
-
-<script>
-  const users = {
-    "gardentester1": "test1234",
-    "gardentester2": "test5678"
-  };
-
-  let isRegistering = false;
-  let currentUser = null;
-
-  function login() {
-    const user = document.getElementById("username").value.trim();
-    const pass = document.getElementById("password").value;
-
-    if (!user) return alert("Enter a username");
-
-    if (!isRegistering) {
-      if (users[user] && users[user] === pass) {
-        currentUser = user;
-        document.getElementById("auth-container").style.display = "none";
-        document.getElementById("trade-ui").style.display = "block";
-        setUserOnline(user);
-        updateUserList();
-        document.getElementById("friend-offer-label").textContent =
-          "@Waiting for other user...";
+    function login() {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+      if ((username === 'user1' && password === 'test1') || (username === 'user2' && password === 'test2')) {
+        loggedInUser = username;
+        document.getElementById("loginForm").style.display = 'none';
+        document.getElementById("app").style.display = 'block';
+        usersOnline++;
+        document.getElementById("usersOnline").textContent = usersOnline;
       } else {
-        alert("Invalid login!");
-      }
-    } else {
-      if (users[user]) {
-        alert("User already exists.");
-      } else {
-        users[user] = pass;
-        alert("Registered! Now log in.");
-        toggleAuth();
+        alert("Invalid login");
       }
     }
-  }
 
-  function toggleAuth() {
-    isRegistering = !isRegistering;
-    document.getElementById("auth-title").textContent = isRegistering ? "Register" : "Sign In";
-    document.querySelector(".toggle-auth").textContent = isRegistering
-      ? "Already have an account?"
-      : "Don't have an account?";
-  }
-
-  function setUserOnline(user) {
-    let onlineUsers = JSON.parse(localStorage.getItem("onlineUsers") || "[]");
-    if (!onlineUsers.includes(user)) {
-      onlineUsers.push(user);
+    function confirmItem() {
+      const selectedPet = document.getElementById("pet").value;
+      if (confirm(`Are you sure you have the item '${selectedPet}' in-game?`)) {
+        const ul = loggedInUser === 'user1' ? document.getElementById("yourItems") : document.getElementById("friendItems");
+        const li = document.createElement("li");
+        li.textContent = selectedPet;
+        ul.appendChild(li);
+      }
     }
-    localStorage.setItem("onlineUsers", JSON.stringify(onlineUsers));
-  }
 
-  function updateUserList() {
-    const list = document.getElementById("user-list");
-    list.innerHTML = "";
-    const usersOnline = JSON.parse(localStorage.getItem("onlineUsers") || "[]");
-
-    usersOnline.forEach(u => {
-      const li = document.createElement("li");
-      li.textContent = u;
-      list.appendChild(li);
-    });
-
-    // Show the other user's name
-    const otherUser = usersOnline.find(u => u !== currentUser);
-    if (otherUser) {
-      document.getElementById("friend-offer-label").textContent = `@${otherUser}'s Offer`;
-    } else {
-      document.getElementById("friend-offer-label").textContent = `@Waiting for other user...`;
+    function addItem(who) {
+      const item = prompt("Enter what you want to offer (e.g., 10 Sheckles):");
+      if (item) {
+        const ul = who === 'you' ? document.getElementById("yourItems") : document.getElementById("friendItems");
+        const li = document.createElement("li");
+        li.textContent = item;
+        ul.appendChild(li);
+      }
     }
-  }
-
-  // Sync online users across tabs
-  window.addEventListener("storage", updateUserList);
-
-  // Cleanup on close
-  window.addEventListener("beforeunload", () => {
-    if (!currentUser) return;
-    let onlineUsers = JSON.parse(localStorage.getItem("onlineUsers") || "[]");
-    onlineUsers = onlineUsers.filter(u => u !== currentUser);
-    localStorage.setItem("onlineUsers", JSON.stringify(onlineUsers));
-  });
-</script>
-
+  </script>
 </body>
 </html>

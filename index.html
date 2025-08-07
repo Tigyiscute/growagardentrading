@@ -1,7 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Grow a Garden Trade Chat</title>
+  <title>Grow a Garden Chat</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    #chat {
+      max-height: 400px;
+      overflow-y: auto;
+      background: white;
+      padding: 10px;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+    .message {
+      border-bottom: 1px solid #eee;
+      margin-bottom: 5px;
+      padding-bottom: 5px;
+    }
+    .reply {
+      margin-left: 20px;
+      background: #f0f0f0;
+      padding: 5px;
+      border-left: 2px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <h2>Global Chat</h2>
+  <div id="chat"></div>
+  <input id="username" placeholder="Username" />
+  <input id="message" placeholder="Message" />
+  <button id="send">Send</button>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
@@ -20,138 +54,53 @@
     const db = getDatabase(app);
     const messagesRef = ref(db, "messages");
 
-    async function getUserIdFromUsername(username) {
-      const res = await fetch("https://users.roblox.com/v1/usernames/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ usernames: [username], excludeBannedUsers: true })
+    const chatDiv = document.getElementById("chat");
+    const usernameInput = document.getElementById("username");
+    const messageInput = document.getElementById("message");
+    const sendBtn = document.getElementById("send");
+
+    sendBtn.onclick = () => {
+      const username = usernameInput.value.trim();
+      const message = messageInput.value.trim();
+      if (!username || !message) return;
+
+      push(messagesRef, {
+        username,
+        message,
+        timestamp: Date.now(),
+        replyTo: null
       });
-      const data = await res.json();
-      return data.data?.[0]?.id || null;
-    }
 
-    async function getAvatarURL(username) {
-      const userId = await getUserIdFromUsername(username);
-      return userId
-        ? `https://www.roblox.com/headshot-thumbnail/image?userId=${userId}&width=150&height=150&format=png`
-        : "https://tr.rbxcdn.com/3f1cd497b601a476164c10d57450f356/150/150/AvatarHeadshot/Png";
-    }
+      messageInput.value = "";
+    };
 
-    document.addEventListener("DOMContentLoaded", () => {
-      const chatDiv = document.getElementById("chat");
-      const usernameInput = document.getElementById("username");
-      const messageInput = document.getElementById("message");
-      const sendBtn = document.getElementById("send");
-
-      let replyTo = null;
-
-      sendBtn.onclick = async () => {
+    function createReplyButton(key) {
+      const btn = document.createElement("button");
+      btn.textContent = "Reply";
+      btn.onclick = () => {
+        const reply = prompt("Enter your reply:");
         const username = usernameInput.value.trim();
-        const message = messageInput.value.trim();
-        if (!username || !message) return;
-
-        await push(messagesRef, {
-          username,
-          message,
-          replyTo: replyTo || null,
-          timestamp: Date.now()
-        });
-
-        messageInput.value = "";
-        replyTo = null;
-        document.getElementById("replyingTo").textContent = "";
+        if (reply && username) {
+          push(messagesRef, {
+            username,
+            message: reply,
+            timestamp: Date.now(),
+            replyTo: key
+          });
+        }
       };
+      return btn;
+    }
 
-      onChildAdded(messagesRef, async (data) => {
-        const msg = data.val();
-        const avatarURL = await getAvatarURL(msg.username);
-        const messageDiv = document.createElement("div");
-        messageDiv.className = "message";
-
-        const repliedText = msg.replyTo ? `<div class="reply-to">Replying to: <b>${msg.replyTo}</b></div>` : "";
-
-        messageDiv.innerHTML = `
-          <img src="${avatarURL}" alt="avatar" class="avatar">
-          <div class="msg-content">
-            <b>${msg.username}</b>${repliedText}
-            <p>${msg.message}</p>
-            <button onclick="replyToUser('${msg.username}')">Reply</button>
-          </div>
-        `;
-
-        chatDiv.appendChild(messageDiv);
-        chatDiv.scrollTop = chatDiv.scrollHeight;
-      });
-
-      window.replyToUser = (username) => {
-        replyTo = username;
-        document.getElementById("replyingTo").textContent = `Replying to: ${username}`;
-      };
+    onChildAdded(messagesRef, (data) => {
+      const msg = data.val();
+      const msgDiv = document.createElement("div");
+      msgDiv.className = msg.replyTo ? "message reply" : "message";
+      msgDiv.innerHTML = `<b>${msg.username}</b>: ${msg.message}`;
+      msgDiv.appendChild(createReplyButton(data.key));
+      chatDiv.appendChild(msgDiv);
+      chatDiv.scrollTop = chatDiv.scrollHeight;
     });
   </script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f0f2f5;
-      margin: 0;
-      padding: 20px;
-    }
-    #chat {
-      height: 400px;
-      overflow-y: scroll;
-      border: 1px solid #ccc;
-      padding: 10px;
-      background: #fff;
-      margin-bottom: 15px;
-    }
-    .message {
-      display: flex;
-      align-items: flex-start;
-      margin-bottom: 15px;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 10px;
-    }
-    .avatar {
-      width: 50px;
-      height: 50px;
-      border-radius: 8px;
-      margin-right: 10px;
-    }
-    .msg-content {
-      flex-grow: 1;
-    }
-    .msg-content p {
-      margin: 5px 0;
-    }
-    .reply-to {
-      font-size: 0.85em;
-      color: #888;
-    }
-    #replyingTo {
-      font-weight: bold;
-      margin-bottom: 10px;
-      color: #007bff;
-    }
-    input, button {
-      padding: 10px;
-      margin-right: 5px;
-    }
-    button {
-      background: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-  <h2>Grow a Garden Global Chat</h2>
-  <div id="chat"></div>
-
-  <div id="replyingTo"></div>
-
-  <input type="text" id="username" placeholder="Your Roblox Username">
-  <input type="text" id="message" placeholder="Enter your message">
-  <button id="send">Send</button>
 </body>
 </html>

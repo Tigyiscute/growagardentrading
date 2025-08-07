@@ -4,33 +4,62 @@
   <title>Grow a Garden Chat</title>
   <style>
     body {
-      font-family: Arial;
-      background: #f4f4f4;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom right, #2196f3, #21cbf3);
       padding: 20px;
+      margin: 0;
+      color: #fff;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
     }
     #chat {
-      max-height: 400px;
+      max-height: 500px;
       overflow-y: auto;
-      background: white;
-      padding: 10px;
-      border: 1px solid #ccc;
-      margin-bottom: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      margin-bottom: 15px;
     }
     .message {
-      border-bottom: 1px solid #eee;
-      margin-bottom: 5px;
-      padding-bottom: 5px;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      position: relative;
     }
     .reply {
-      margin-left: 20px;
-      background: #f0f0f0;
-      padding: 5px;
-      border-left: 2px solid #ccc;
+      margin-left: 30px;
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .reply-label {
+      font-size: 0.85em;
+      color: #bbdefb;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      font-size: 1em;
+    }
+    input {
+      width: 200px;
+    }
+    button {
+      background-color: #0d47a1;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #1565c0;
     }
   </style>
 </head>
 <body>
-  <h2>Global Chat</h2>
+  <h2>Grow a Garden Global Chat</h2>
   <div id="chat"></div>
   <input id="username" placeholder="Username" />
   <input id="message" placeholder="Message" />
@@ -59,6 +88,8 @@
     const messageInput = document.getElementById("message");
     const sendBtn = document.getElementById("send");
 
+    const messageMap = {};
+
     sendBtn.onclick = () => {
       const username = usernameInput.value.trim();
       const message = messageInput.value.trim();
@@ -77,6 +108,7 @@
     function createReplyButton(key) {
       const btn = document.createElement("button");
       btn.textContent = "Reply";
+      btn.style.marginLeft = "10px";
       btn.onclick = () => {
         const reply = prompt("Enter your reply:");
         const username = usernameInput.value.trim();
@@ -92,14 +124,27 @@
       return btn;
     }
 
-    onChildAdded(messagesRef, (data) => {
-      const msg = data.val();
+    function renderMessage(key, msg) {
       const msgDiv = document.createElement("div");
       msgDiv.className = msg.replyTo ? "message reply" : "message";
-      msgDiv.innerHTML = `<b>${msg.username}</b>: ${msg.message}`;
-      msgDiv.appendChild(createReplyButton(data.key));
+
+      if (msg.replyTo && messageMap[msg.replyTo]) {
+        const replyToMsg = messageMap[msg.replyTo];
+        msgDiv.innerHTML = `<div class='reply-label'>Replying to <b>${replyToMsg.username}</b>: ${replyToMsg.message}</div>`;
+      }
+
+      const content = document.createElement("div");
+      content.innerHTML += `<b>${msg.username}</b>: ${msg.message}`;
+      content.appendChild(createReplyButton(key));
+      msgDiv.appendChild(content);
       chatDiv.appendChild(msgDiv);
       chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+
+    onChildAdded(messagesRef, (data) => {
+      const msg = data.val();
+      messageMap[data.key] = msg;
+      renderMessage(data.key, msg);
     });
   </script>
 </body>

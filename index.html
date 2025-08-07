@@ -108,10 +108,31 @@
       font-size: 14px;
       margin: 4px 0;
     }
+
+    #your-offer-label, #friend-offer-label {
+      color: white;
+      font-weight: bold;
+      font-size: 20px;
+      text-shadow: 1px 1px 3px black;
+    }
+
+    #your-offer-label {
+      position: absolute;
+      top: 100px;
+      left: 100px;
+    }
+
+    #friend-offer-label {
+      position: absolute;
+      top: 100px;
+      right: 100px;
+      text-align: right;
+    }
   </style>
 </head>
 <body>
 
+<!-- Login/Register Screen -->
 <div class="auth-container" id="auth-container">
   <div class="auth-box">
     <h2 id="auth-title">Sign In</h2>
@@ -122,12 +143,21 @@
   </div>
 </div>
 
+<!-- Trade UI -->
 <div class="trade-ui" id="trade-ui">
   <div class="trade-label">Trade</div>
+
+  <!-- Offer Labels -->
+  <div id="your-offer-label">Your Offer</div>
+  <div id="friend-offer-label">@Waiting for other user...</div>
+
+  <!-- Online Users Sidebar -->
   <div class="online-users" id="online-users">
     <h3>Online Users</h3>
     <ul id="user-list"></ul>
   </div>
+
+  <!-- Ready Buttons -->
   <button class="ready-button" id="left-button" onclick="alert('You are ready!')">Ready</button>
   <button class="ready-button" id="right-button" onclick="alert('You are ready!')">Ready</button>
 </div>
@@ -154,6 +184,8 @@
         document.getElementById("trade-ui").style.display = "block";
         setUserOnline(user);
         updateUserList();
+        document.getElementById("friend-offer-label").textContent =
+          "@Waiting for other user...";
       } else {
         alert("Invalid login!");
       }
@@ -188,17 +220,26 @@
     const list = document.getElementById("user-list");
     list.innerHTML = "";
     const usersOnline = JSON.parse(localStorage.getItem("onlineUsers") || "[]");
+
     usersOnline.forEach(u => {
       const li = document.createElement("li");
       li.textContent = u;
       list.appendChild(li);
     });
+
+    // Show the other user's name
+    const otherUser = usersOnline.find(u => u !== currentUser);
+    if (otherUser) {
+      document.getElementById("friend-offer-label").textContent = `@${otherUser}'s Offer`;
+    } else {
+      document.getElementById("friend-offer-label").textContent = `@Waiting for other user...`;
+    }
   }
 
-  // Update in real time when storage changes
+  // Sync online users across tabs
   window.addEventListener("storage", updateUserList);
 
-  // Cleanup: remove user from online list when tab is closed
+  // Cleanup on close
   window.addEventListener("beforeunload", () => {
     if (!currentUser) return;
     let onlineUsers = JSON.parse(localStorage.getItem("onlineUsers") || "[]");

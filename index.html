@@ -1,27 +1,30 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Grow a Garden - Global Chat</title>
+  <title>Grow a Garden - Global Chat with Replies</title>
   <style>
     body { font-family: Arial; background: #e3f9e5; text-align: center; padding: 20px; }
     .container { background: white; padding: 30px; border-radius: 12px; max-width: 800px; margin: auto; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
-    .chat-box { margin-top: 20px; max-height: 300px; overflow-y: auto; padding: 10px; background: #f3fff3; border-radius: 10px; border: 1px solid #ccc; text-align: left; }
-    .message { margin-bottom: 10px; background: #d0ffd8; padding: 10px; border-radius: 5px; }
+    .chat-box { margin-top: 20px; max-height: 400px; overflow-y: auto; padding: 10px; background: #f3fff3; border-radius: 10px; border: 1px solid #ccc; text-align: left; }
+    .message { margin-bottom: 15px; background: #d0ffd8; padding: 10px; border-radius: 5px; }
+    .reply { margin-left: 20px; background: #c7f6d6; }
     textarea { width: 100%; padding: 10px; border-radius: 5px; }
-    button { background-color: #38a169; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin-top: 10px; cursor: pointer; }
+    button { background-color: #38a169; color: white; padding: 8px 14px; border: none; border-radius: 5px; margin-top: 5px; cursor: pointer; }
     button:hover { background-color: #2f855a; }
+    .reply-btn { background-color: #4299e1; }
+    .reply-btn:hover { background-color: #2b6cb0; }
+    .reply-box { margin-top: 5px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🌱 Grow a Garden - Global Chat</h1>
+    <h1>🌱 Grow a Garden - Global Chat + Replies</h1>
     <div id="login">
       <input type="text" id="username" placeholder="Enter your Roblox username">
       <button onclick="login()">Login</button>
     </div>
 
     <div id="chatSection" style="display:none;">
-      <h2>💬 Chat</h2>
       <div class="chat-box" id="chatBox"></div>
       <textarea id="chatInput" placeholder="Type your message..." rows="2"></textarea>
       <button onclick="sendMessage()">Send Message</button>
@@ -44,7 +47,6 @@
       appId: "1:483682582157:web:e32ffb641bf5dd3d08acc4"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -74,6 +76,16 @@
       input.value = "";
     }
 
+    function sendReply(parentKey, replyText) {
+      if (!replyText) return;
+
+      db.ref(`messages/${parentKey}/replies`).push({
+        user: currentUser,
+        text: replyText,
+        timestamp: Date.now()
+      });
+    }
+
     function listenForMessages() {
       const chatBox = document.getElementById("chatBox");
       db.ref("messages").on("value", snapshot => {
@@ -81,13 +93,57 @@
         chatBox.innerHTML = "";
         for (let key in messages) {
           const msg = messages[key];
-          const div = document.createElement("div");
-          div.className = "message";
-          div.innerHTML = `<strong>${msg.user}:</strong> ${msg.text}`;
-          chatBox.appendChild(div);
+          const msgDiv = document.createElement("div");
+          msgDiv.className = "message";
+          msgDiv.innerHTML = `<strong>${msg.user}:</strong> ${msg.text}`;
+
+          // Add reply button
+          const replyBtn = document.createElement("button");
+          replyBtn.textContent = "Reply";
+          replyBtn.className = "reply-btn";
+          replyBtn.onclick = () => showReplyInput(key, msgDiv);
+          msgDiv.appendChild(replyBtn);
+
+          // Show replies
+          if (msg.replies) {
+            for (let replyKey in msg.replies) {
+              const reply = msg.replies[replyKey];
+              const replyDiv = document.createElement("div");
+              replyDiv.className = "message reply";
+              replyDiv.innerHTML = `<strong>${reply.user} (reply):</strong> ${reply.text}`;
+              msgDiv.appendChild(replyDiv);
+            }
+          }
+
+          chatBox.appendChild(msgDiv);
         }
+
         chatBox.scrollTop = chatBox.scrollHeight;
       });
+    }
+
+    function showReplyInput(msgKey, parentDiv) {
+      // Don't open multiple reply boxes
+      if (parentDiv.querySelector('.reply-box')) return;
+
+      const replyContainer = document.createElement("div");
+      replyContainer.className = "reply-box";
+
+      const replyInput = document.createElement("textarea");
+      replyInput.placeholder = "Reply to this message...";
+      replyInput.rows = 2;
+      replyInput.style.width = "100%";
+
+      const submitBtn = document.createElement("button");
+      submitBtn.textContent = "Send Reply";
+      submitBtn.onclick = () => {
+        sendReply(msgKey, replyInput.value.trim());
+        listenForMessages(); // Refresh chat
+      };
+
+      replyContainer.appendChild(replyInput);
+      replyContainer.appendChild(submitBtn);
+      parentDiv.appendChild(replyContainer);
     }
   </script>
 </body>
